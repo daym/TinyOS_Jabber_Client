@@ -1,0 +1,2 @@
+#!/bin/bash
+exec make "$@" bigAVR6_1280 install

@@ -1,0 +1,5 @@
+UDP->TCP: <presence type='subscribe'
+to='1503@jmcvl.tilab.tuwien.ac.at'><nick
+xmlns='http://jabber.org/protocol/nick'>m0826039@jmcvl.tilab.tuwien.ac.at</nick></presence>
+TCP->UDP: <presence from='1503@jmcvl.tilab.tuwien.ac.at'
+to='m0826039@jmcvl.tilab.tuwien.ac.at' type='subscribe'></presence>

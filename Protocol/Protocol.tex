@@ -1,0 +1,458 @@
+%***************************************************************************
+% MCLab Protocol Template
+%
+% Embedded Computing Systems Group
+% Institute of Computer Engineering
+% TU Vienna
+%
+%---------------------------------------------------------------------------
+% Vers.	Author	Date	Changes
+% 1.0	bw	10.3.06	first version
+% 1.1	bw	25.4.06	listing is in a different directory
+% 1.2	bw	24.5.06	tutor has to be listed on title page
+% 1.3	bw	16.6.06	statement about no plagiarism on title page (sign it!)
+%---------------------------------------------------------------------------
+% Author names:
+%       bw      Bettina Weiss
+%***************************************************************************
+
+\documentclass[12pt,a4paper,titlepage,oneside]{article}
+\usepackage{graphicx}            % fuer Bilder
+\usepackage{listings}            % fuer Programmlistings
+\usepackage{color}
+\usepackage{hyperref}
+\definecolor{darkgreen}{rgb}{0.0, 0.2, 0.13}
+% \lstset{language=C, morekeywords={async,command,event,task,atomic,interface,module,implementation,configuration}, keywordstyle=\color{teal}\bfseries,}
+\lstdefinelanguage{nesC}{
+	morekeywords={uses,provides,as,call,signal,async,command,event,task,atomic,interface,module,implementation,configuration,components,new,enum,void,int,char,define,ifdef,elif,endif,include,static,if,else,for,while,do,goto,switch,case,break,continue,volatile,return,const,default,post},
+	sensitive=true,
+	morestring=[b]",
+	morestring=[b]',
+	morecomment=[l]{//},
+	morecomment=[s]{/*}{*/},
+	commentstyle=\color{darkgreen},
+	stringstyle=\color{cyan},
+}
+%\usepackage{german}              % fuer deutsche Umbrueche
+\usepackage[latin1]{inputenc}    % fuer Umlaute
+\usepackage{times}               % PDF files look good on screen
+\usepackage{amssymb,amsmath,amsthm}
+\usepackage{url}
+\usepackage{enumitem}
+
+%***************************************************************************
+% note: the template is in English, but you can use German for your
+% protocol as well; in that case, remove the comment from the
+% \usepackage{german} line above
+%***************************************************************************
+
+
+%***************************************************************************
+% enter your data into the following fields
+%***************************************************************************
+\newcommand{\Vorname}{Danny}
+\newcommand{\Nachname}{Milosavljevic}
+\newcommand{\MatrNr}{0826039}
+\newcommand{\Email}{e0826039@student.tuwien.ac.at}
+\newcommand{\Part}{I}
+\newcommand{\Tutor}{Michael Spiegel}
+%***************************************************************************
+
+
+%***************************************************************************
+% generating the document from Protocol.tex:
+%       "pdflatex Protocol"        generates a .pdf file
+%       "pdflatex Protocol"        repeat to get correct table of contents
+%       "evince Protocol.pdf &"    shows the .pdf file on viewer
+%
+%***************************************************************************
+
+%---------------------------------------------------------------------------
+% include all the stuff that is the same for all protocols and students
+\input ProtocolHeader.tex
+%---------------------------------------------------------------------------
+
+\begin{document}
+
+%---------------------------------------------------------------------------
+% create titlepage and table of contents
+\MakeTitleAndTOC
+%---------------------------------------------------------------------------
+
+
+%***************************************************************************
+% This is where your protocol starts
+%***************************************************************************
+
+%***************************************************************************
+% remove the following lines from your own protocol file!
+%***************************************************************************
+
+%***************************************************************************
+\section{Overview}
+%***************************************************************************
+
+%---------------------------------------------------------------------------
+\subsection{Connections,  External Pullups/Pulldowns}
+%---------------------------------------------------------------------------
+
+See \hyperref[MCVU 2014 - Application 2 Specification]{http://ti.tuwien.ac.at/ecs/teaching/courses/mclu/exercises/spec-2.pdf/at\_download/file}.
+
+In addition: P5 ADC input to PF2.
+
+\subsection{Installation}
+
+make JABBER\_USERNAME=xxx bigAVR6\_1280 install
+
+%---------------------------------------------------------------------------
+\subsection{Design Decisions}
+%---------------------------------------------------------------------------
+
+\begin{itemize}
+\item Keyboard mapping is not configurable.
+
+\item Subscription response is assumed to be reliable. If our response to a
+subscription request gets lost, too bad.
+
+\item 4 buddies visible max (when a new buddy sends a message, it drops the buddy
+which hadn't sent/received a message for the longest time to make room for the new buddy,
+then inserts the new buddy).
+
+\item 80 Byte received message max
+\item 31 Byte jid max
+\item 20 slot keyboard buffer (one slot is 16 bit)
+\item 31 Byte max entry length
+\item Touchscreen calibrated to (0, -10).
+\item Jabber Username is determined at compile time and then hardcoded into the executable
+(alternative would be: leave "from" off the message and just send it like
+that).\par
+\item When you send a message to someone, it acknowledges the receiver's subscription request, if any.\par
+\end{itemize}
+
+%---------------------------------------------------------------------------
+\subsection{Specialities}
+%---------------------------------------------------------------------------
+
+Does your solution have something special (positive or negative)?
+
+Line Editing with Cursor and Insert and Delete keys.
+
+%***************************************************************************
+\section{Main Application}
+%***************************************************************************
+
+The Application is a Jabber client.\par
+
+After boot, it logs into the Jabber server at 10.60.0.1 port udp/5222 (see
+Application/udp\_config.h). Then it updates the (Jabber) status to "available". When the
+server sends the roster, it is shown in the active buddies list at the top of
+the screen (you may need to restart the proxy beforehand for the server to actually send the roster).\par
+
+Once it receives a message, it makes sure the sender is in the active
+buddies list at the top of the screen (if the list is full, it replaces the
+buddy which was sending or receiving messages the least). If the sender is
+not selected, it displays the symbol M in front of the buddy in order to
+signal to you that this buddy sent a message.\par
+
+When you click on the buddy in the
+active buddies list at the top of the screen, it shows the (last) message it
+received from this buddy, and, if applicable, whether the buddy wants to
+subscribe to your presence.\par
+
+If the buddy is not available, the entry is striken out.\par
+
+The 2 line LCD and a PS/2 keyboard can be used to send a message to the
+currently selected buddy. Type the message and press RETURN. The message
+is immediately sent to the buddy.
+
+%***************************************************************************
+\section{JabberClientC}
+%***************************************************************************
+
+This is the main module. It contains: Text entry box including caret handling and input handling, active buddies list handling including TouchScreen.
+When a message is received, it plays a sound. If the buddy that sent the message isn't currently selected, it marks it with a M icon.
+When the buddy is selected, the message received from him is displayed on the graphical LCD.
+
+\section{HplPS2C}
+
+Handles the keyboard input via PS/2 at PORTD. Only provides an async event receivedCode(code) for the raw data received.
+
+Used \hyperref[PS2Keyboard]{http://www.computer-engineering.org/ps2keyboard/} as reference.
+
+\section{KeyboardC}
+
+High-level keyboard handler. Provides key to ASCII mapping and buffering. Will actually signal events with the ASCII code, if possible.
+
+\section{VolumeAdcC}
+
+Handles P5 potentiometer.
+
+\section{HplVS1011eC}
+
+Low-level driver for the VS1011e (MP3). Only can process 32 Byte at
+once and access the registers.
+
+\section{MessageManagerC}
+
+Handles Jabber messages and provides the active buddies list.
+
+\section{VS1011eC}
+
+High-level sample-based MP3 handler. Can only play samples from PROGMEM. Can set the volume - with automatically linearized loudness.
+
+%---------------------------------------------------------------------------
+\subsection{Controlling Loudness}
+%---------------------------------------------------------------------------
+
+The linear Loudness scale for the music volume is approximated like this:
+
+\begin{eqnarray*}
+N = 1 - (1 - a)^4 \\
+0 \le a \le 1 \Rightarrow 0 \le N \le 1
+\end{eqnarray*}
+
+In order to get all tempoerary results to fit into 16 bits (as requested), I first made the following choices:
+
+The new $ \tilde{a} $ is supposed to be in range [0, 255], limited to integers only.
+The new $ \tilde{N} $ is supposed to be in range [0, 255], limited to integers only.
+
+So I set
+
+\begin{eqnarray*}
+\tilde{a} = 255 a \\
+\tilde{N} = 255 N
+\end{eqnarray*}
+
+And substitute into the equation to get:
+\begin{eqnarray*}
+N = 1 - (1 - a)^4 \\
+\tilde{N} = 255 - 255 (1 - \frac{\tilde{a}}{255})^4 \\
+255 = \sqrt[4]{255}^4 \\
+\tilde{N} = 255 - \left(\sqrt[4]{255} - \sqrt[4]{255} \frac{\tilde{a}}{255}\right)^4 \\
+\sqrt[4]{255} \approx 4 \\
+\frac{255}{\sqrt[4]{255}} \approx 64 \\
+\tilde{N} \approx 255 - \left(4 - \frac{\tilde{a}}{64}\right)^4 \\
+\tilde{N} \approx 255 - \left(\frac{256 - \tilde{a}}{64}\right)^4 \\
+\tilde{N} \approx 255 - \left(\frac{255 - \tilde{a}}{64}\right)^4 \\
+\tilde{N} \approx 255 - \left(\frac{(255 - \tilde{a})^2}{64^2}\right)^2 \\
+0 \le \tilde{a} \le 255 \Rightarrow 0 \le (255 - \tilde{a}) \le 255 \\
+(255 - \tilde{a}) \le 255 \Rightarrow (255 - \tilde{a})^2 \le 255^2 < 2^{16} \\
+64^2 = (2^6)^2 = 2^{12} < 2^{16}
+\end{eqnarray*}
+
+In order to only use integer arithmetic, I use instead \[\tilde{N} \approx 255 - \left\lfloor{\frac{(255 - \tilde{a})^2}{64^2}}\right\rfloor^2\] which consistently overshoots:
+
+\begin{figure}[htb]
+\begin{center}
+\input{loudness}
+\end{center}
+\end{figure}
+
+Therefore, I use a manual correction at the lower end in order to be able to reach $ \tilde{N} = 0 $.
+
+%***************************************************************************
+\section{Problems}
+%***************************************************************************
+
+No problems.
+
+%***************************************************************************
+\section{Work}
+%***************************************************************************
+
+Estimate the work you put into solving the Application.
+
+\begin{tabular}{|l|c|}
+\hline
+reading manuals, datasheets	& 20 h	\\
+program design			& 10 h	\\
+programming			& 20 h	\\
+debugging			& 15 h	\\
+questions, protocol		& 15 h	\\
+\hline
+{\bf Total}			& 80 h	\\
+\hline
+\end{tabular}
+
+%***************************************************************************
+\section{Theory Tasks}
+%***************************************************************************
+
+
+% Your answers should be brief but complete
+
+\emph{Please work out the theory tasks very carefully, as there are very
+	limited points to gain!}
+
+\noindent
+Assume that you are part of a group of $n$ people.
+Every few weeks you and your peers try to organize a get-together for the
+group.
+Assume that everyone has a different schedule and thus their own unique
+desired date and time.
+Sadly, the communication medium you use is unreliable.
+Every time you send a message to the group it is possibly received only by a
+subset of the group, in the worst case the message is lost and thus received
+by no one.
+Luckily, everyone has ample free-time, thus as soon as someone receives a
+message with an unknown date, it gets marked in his/her calendar.
+Everyone in the group visits the local pub on every date marked in his/her
+calendar.
+
+\noindent
+The goal of this task is to find the point in time where enough system-wide
+communication occurred to guarantee that at least at one date all peers of
+the group are present.
+
+\subsection{Communication protocol}
+To simplify the task, communication is divided into several subsequent rounds.
+Starting with round $r=1$, in each round every peer $p_i,~i \in \{1,..,n\}$,
+has the ability to send a message to the group.
+The round $r$ message sending happens in zero time and is synchronous, i.e.,
+all peers send and receive messages at the exact same time.
+Assume that the communication starts early enough, such that at least $n^2$
+communication rounds take place before the earliest date proposed by any one
+of the peers.
+Recall that even though messages are sent via a broadcast, each message may be
+received only by a (possible empty) subset of the group.
+After each round, every peer $p_i$ marks the received dates $d_j,~j \in
+\{1,..,n\}$, on his/her calendar $c_i$.
+
+To counteract the unreliable communication system, every peer sends all
+dates marked on his/her calendar (every peer starts out with one unique date
+prior to round 1) to the group members.
+Moreover, for every message sent by $p_i$ and received by $p_j$ ($i\neq j$) in
+some round $r$, the sender $p_i$ reliably receives, in the same round, a response
+message from $p_j$ with all dates know to $p_j$ up to and including round
+$r-1$.
+
+Furthermore, despite the unreliable nature of the protocol, it is guaranteed
+that for every round $r$, the graph $G^r$, that results from representing
+every peer as a node and every message sent from $p_i$ to $p_j$ in round $r$
+as an edge $(p_i \rightarrow p_j)$, is connected.
+
+\QuText{
+	\textbf{[3 Points] Task 1:}\\
+	Proof rigorously that after $n$ rounds there exists a date at which all
+	peers of the group are present.
+}
+
+Every node, by using of the path (which is then guaranteed to exist between any nodes), can "slowly" transmit its calendar to any other node, until every node has the same calendar.\par
+
+Say node A manages to transfer its calendar to its neighbour node B. Then node B will reliably answer with its calendar so far, which node A will incorporate into its calendar.\par
+If node A manages to transfer its calendar to its neighbour node C, then node C will reliably answer with its calendar so far, which node A will incorporate into its calendar.\par
+In this way node A will end up with the accumulated calendar of node B and node C so far (although node B and node C are still behind).\par
+This took one round.\par
+Each of the n nodes does this at the same time, increasing their calendar size (or at least keeping it the same) and progressing its dates through the network ("slowly") forward. (Note: because of the connectivity, that also means that A must have received a broadcast as well, by definition. So in this sense, A is also "forward")\par
+Specifically, look at one node A. In one round, it will have incorporated the ($r-1$-round) calendars of all its forward neighbours. It might still miss entries of farther successors.\par
+However, each farhter successor also incorporated the ($r-1$-round) calendars of all its forward neighbours. This might still miss ($r-1$-round) entries of farther successors. etcetc.\par
+In the end, one farthest successor is the node A, by definition of connectivity. Its ($r-1$-round) entries will also be incorporated into its "back" neighbour - and it will also receive the new entries of the second-farthest successor.\par
+For each node after each round, either it already knew all dates or it got at least one new date (from another node, which maybe got it from another node etcetc).\par
+After n rounds, it thus got n-1 new (unique) dates (and one already-known date). These were all elements of the initial set. Therefore, it is the initial set.
+
+\QuText{
+	\textbf{[3 Points] Task 2:}\\
+	Assume that the guaranteed response messages system fails (this is a
+	frequent problem in unreliable communication scenarios, such as wireless
+	sensor networks) and instead the communication graph is weakly connected
+	with exactly one root $R^r$.
+	A root $R^r$ of round $r$ is a node that does not receive any message in
+	round $r$.
+	Proof rigorously that after $n^2$ rounds, also in this scenario, it is
+	guaranteed that there exists a date at which all peers of the group are
+	present.
+
+	Note: The proof whether this holds (or not) in the case of less than $n^2$
+	rounds is still an open research question.
+}
+
+There are n different dates. There are n nodes. 
+
+In each round, there is either progress or all nodes already know a common date. Proof:
+
+Per round, there is only no global progress when all successors already know
+each date. Otherwise, if one node receives the date, it will pass it on
+until all others know the date - actively tells it forward if possible. In the next round it passes it backward, if asked.\par
+Because the graph is weakly connected, each node is asked (for $r-1$-round dates) or tells forward or both.\par
+Thus after one round, another node B knows this node's dates.\par
+In the next round, node B is either asked or tells.\par
+So another node C knows node B's dates.\par
+
+Each time there's a forward arrow in a path, another (end) node gets to know this (beginning) node's calendar of round $r$ and tells the beginning node its calendar, as in Task 1.
+Each time there's a backward arrow in a path, another (beginning) node gets to know this (end) node's calendar of round $r$ and tells the end node its calendar, as in Task 1.
+
+%***************************************************************************
+\newpage
+\appendix
+\section{Listings}
+\small{
+%***************************************************************************
+
+Include EVERY source file of your Application (including headers)!!!
+And EVERY file you have modified!
+
+%---------------------------------------------------------------------------
+%\subsection{Application}
+%---------------------------------------------------------------------------
+
+\subsection{Main}
+
+\lstinputlisting[breaklines=true, caption=Application/prepare]{../Application/prepare}
+\lstinputlisting[breaklines=true, caption=Application/compile]{../Application/compile}
+\lstinputlisting[breaklines=true, caption=Application/Makefile]{../Application/Makefile}
+\lstinputlisting[breaklines=true, caption=Application/udp\_config.h]{../Application/udp_config.h}
+\lstinputlisting[breaklines=true, caption=Application/JabberClientAppC.nc, language=nesC]{../Application/JabberClientAppC.nc}
+\lstinputlisting[breaklines=true, caption=Application/JabberClientC.nc, language=nesC]{../Application/JabberClientC.nc}
+
+%---------------------------------------------------------------------------
+\subsection{Keyboard}
+%---------------------------------------------------------------------------
+
+\lstinputlisting[breaklines=true, caption=Application/Keyboard.nc, language=nesC]{../Application/Keyboard.nc}
+\lstinputlisting[breaklines=true, caption=Application/Keyboard.h]{../Application/Keyboard.h}
+\lstinputlisting[breaklines=true, caption=Application/KeyboardC.nc, language=nesC]{../Application/KeyboardC.nc}
+\lstinputlisting[breaklines=true, caption=Application/HplPS2.nc, language=nesC]{../Application/HplPS2.nc}
+\lstinputlisting[breaklines=true, caption=Application/HplPS2C.nc, language=nesC]{../Application/HplPS2C.nc}
+
+%---------------------------------------------------------------------------
+\subsection{MP3}
+%---------------------------------------------------------------------------
+
+\lstinputlisting[breaklines=true, caption=Application/sounds.h]{../Application/sounds.h}
+\lstinputlisting[breaklines=true, caption=Application/MP3.nc, language=nesC]{../Application/MP3.nc}
+\lstinputlisting[breaklines=true, caption=Application/VS1011eC.nc, language=nesC]{../Application/VS1011eC.nc}
+\lstinputlisting[breaklines=true, caption=Application/HplVS1011e.nc, language=nesC]{../Application/HplVS1011e.nc}
+\lstinputlisting[breaklines=true, caption=Application/HplVS1011e.h]{../Application/HplVS1011e.h}
+\lstinputlisting[breaklines=true, caption=Application/HplVS1011eC.nc, language=nesC]{../Application/HplVS1011eC.nc}
+
+%---------------------------------------------------------------------------
+\subsection{ADC P5}
+%---------------------------------------------------------------------------
+
+\lstinputlisting[breaklines=true, caption=Application/VolumeAdcC.nc, language=nesC]{../Application/VolumeAdcC.nc}
+
+%---------------------------------------------------------------------------
+\subsection{MessageManager}
+%---------------------------------------------------------------------------
+
+\lstinputlisting[breaklines=true, caption=Application/MessageManager.nc, language=nesC]{../Application/MessageManager.nc}
+\lstinputlisting[breaklines=true, caption=Application/buddy.h]{../Application/buddy.h}
+\lstinputlisting[breaklines=true, caption=Application/MessageManagerC.nc, language=nesC]{../Application/MessageManagerC.nc}
+
+%---------------------------------------------------------------------------
+\subsection{GLCD}
+%---------------------------------------------------------------------------
+
+\lstinputlisting[breaklines=true, caption=Application/GlcdP.nc, language=nesC]{../Application/GlcdP.nc}
+
+%---------------------------------------------------------------------------
+\subsection{TCP/IP Stack}
+%---------------------------------------------------------------------------
+
+\lstinputlisting[breaklines=true, caption=Application/PingP.nc, language=nesC]{../Application/PingP.nc}
+\lstinputlisting[breaklines=true, caption=Application/UdpTransceiverP.nc, language=nesC]{../Application/UdpTransceiverP.nc}
+
+%***************************************************************************
+}% small
+\end{document}
+

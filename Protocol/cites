@@ -1,0 +1,12 @@
+
+mp3 howto http://ti.tuwien.ac.at/ecs/teaching/courses/mclu/misc/task2-specific-stuff/mp3-howto/at_download/file
+	VS1011e - MP3 AUDIO DECODER Programming Howto v1.1
+	Andreas Hagmann, ahagmann@ecs.tuwien.ac.at
+	May 23, 2013
+
+2014 application 2 v1.0 http://ti.tuwien.ac.at/ecs/teaching/courses/mclu/exercises/spec-2.pdf/at_download/file
+	MCVU 2014 – Application 2
+	TinyOS XMPP Client v1.0
+
+git clone "ssh://m0826039@ssh.tilab.tuwien.ac.at/tilab/mcvl.repo/tinyos_ss14.git"
+
