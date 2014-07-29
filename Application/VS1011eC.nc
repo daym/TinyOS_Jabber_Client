@@ -14,10 +14,8 @@ implementation {
 			static uint8_t magic[8] = {0x53,0xef,0x6e,0xcc,0x00,0x00,0x00,0x00};
 			call HplVS1011e.writeRegister(MODE, (1<<11)|(1<<5)|(1<<6));
 			return call HplVS1011e.sendData(magic, sizeof(magic));
-			/*return call MP3.sendData(magic, sizeof(magic));*/
-		}
-		//return call HplVS1011e.writeRegister(MODE, (1 << 11)|(1<<6)); /* native mode */
-		return SUCCESS;
+		} else
+			return call HplVS1011e.writeRegister(MODE, (1 << 11)|(1<<6)); /* native mode */
 	}
 	uint8_t linearLoudnessFromSlider2(uint8_t value) {
 		/* return 255 (1 - (1 - x)^4) where x = value/255 */
