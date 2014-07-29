@@ -11,7 +11,7 @@ module PingP {
 }
 
 implementation {
-	uint8_t srcData[522];
+	uint8_t srcData[32];
 	uint16_t srcDataLen;
 	in_addr_t srcIp;
 	bool sendingPong = FALSE;
@@ -22,8 +22,8 @@ implementation {
 		if(!sendingPong) {
 			/* send an ICMP echo reply */
 			sendingPong = TRUE;
-			memcpy(srcData, data, len);
-			srcDataLen = len;
+			srcDataLen = (len < 32) ? len : 32;
+			memcpy(srcData, data, srcDataLen);
 			memcpy(&srcIp, xsrcIp, sizeof(*xsrcIp));
 			post sendPong();
 		}
